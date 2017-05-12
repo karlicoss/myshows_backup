@@ -14,18 +14,17 @@ SHOW_URL = '/shows/{show_id}'
 EPISODES_URL = '/profile/shows/{show_id}/'
 
 
-def authenticate(session, username, password):
-    md5 = hashlib.md5(password).hexdigest()
-    res = session.get(AUTH_URL.format(username=username, password_md5=md5))
+def authenticate(session, username, password_md5):
+    res = session.get(AUTH_URL.format(username=username, password_md5=password_md5))
     res.raise_for_status()
 
 
-def load(username, password):
+def load(username, password_md5):
     session = requests.session()
     session._get = session.get
     session.get = lambda url: session._get(API_ROOT + url)
 
-    authenticate(session, username, password)
+    authenticate(session, username, password_md5)
     data = session.get(SHOWS_URL).json()
     total = len(data)
     shows = []
@@ -60,11 +59,13 @@ def load(username, password):
     return shows
 
 
-if __name__ == '__main__':
-    try:
-        username = sys.argv[1]
-    except IndexError:
-        raise Exception('Usage: %s <username>' % sys.argv[0])
-    password = getpass.getpass('Password for %s:' % username)
-    data = load(username, password)
+def main():
+    import config
+    username = config.USERNAME
+    password_md5 = config.PASSWORD_MD5
+    data = load(username, password_md5)
     json.dump(data, sys.stdout, indent=2)
+
+
+if __name__ == '__main__':
+    main()
